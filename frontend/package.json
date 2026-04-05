@@ -1,0 +1,11 @@
+{
+  "name": "topgamer-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for TOPgamer computer club",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve ."
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
