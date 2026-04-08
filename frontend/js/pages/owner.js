@@ -8,8 +8,7 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
-
-// Страница отчетов - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// Страница отчетов - ИСПРАВЛЕННАЯ ВЕРСИЯ (правильные теги таблиц)
 async function renderReports(container) {
     try {
         const [revenue, occupancy, tariffs] = await Promise.all([
@@ -29,33 +28,32 @@ async function renderReports(container) {
             <h1>Аналитика</h1>
             <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
                 <div class="card" style="text-align: center; background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💰</div>
                     <div style="font-size: 2rem; font-weight: 800; color: var(--accent-light);">${formatPrice(totalRevenue)}</div>
                     <p style="color: var(--text-muted);">Общая выручка</p>
                 </div>
                 <div class="card" style="text-align: center;">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎮</div>
                     <div style="font-size: 2rem; font-weight: 800; color: var(--accent-light);">${totalSessions}</div>
                     <p style="color: var(--text-muted);">Всего сеансов</p>
                 </div>
                 <div class="card" style="text-align: center;">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏱️</div>
                     <div style="font-size: 2rem; font-weight: 800; color: var(--accent-light);">${Math.round(avgDuration * 10) / 10}</div>
                     <p style="color: var(--text-muted);">Средняя длительность (ч)</p>
                 </div>
             </div>
             
             <div class="card">
-                <h2>📊 Выручка по дням</h2>
+                <h2>Выручка по дням</h2>
                 ${revenue.length === 0 ? '<p style="text-align: center; padding: 2rem;">Нет данных о выручке</p>' : `
                 <div class="table-container">
-                    2?<thead>
-                        <tr>
-                            <th>Дата</th>
-                            <th>Сеансы</th>
-                            <th>Товары</th>
-                            <th>Пополнения</th>
-                            <th>Итого</th>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Сеансы</th>
+                                <th>Товары</th>
+                                <th>Пополнения</th>
+                                <th>Итого</th>
+                            </tr>
                         </thead>
                         <tbody>
                             ${revenue.map(day => `
@@ -68,21 +66,23 @@ async function renderReports(container) {
                                 </tr>
                             `).join('')}
                         </tbody>
-                    2?table>
+                    </table>
                 </div>
                 `}
             </div>
             
             <div class="card">
-                <h2>💻 Загрузка компьютеров</h2>
+                <h2>Загрузка компьютеров</h2>
                 ${occupancy.length === 0 ? '<p style="text-align: center; padding: 2rem;">Нет данных о загрузке</p>' : `
                 <div class="table-container">
-                    2?<thead>
-                        <tr>
-                            <th>Дата</th>
-                            <th>Количество сеансов</th>
-                            <th>Средняя длительность (ч)</th>
-                            <th>Выручка</th>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Количество сеансов</th>
+                                <th>Средняя длительность (ч)</th>
+                                <th>Выручка</th>
+                            </tr>
                         </thead>
                         <tbody>
                             ${occupancy.map(day => `
@@ -94,20 +94,22 @@ async function renderReports(container) {
                                 </tr>
                             `).join('')}
                         </tbody>
-                    2?table>
+                    </table>
                 </div>
                 `}
             </div>
             
             <div class="card">
-                <h2>⭐ Популярность тарифов</h2>
+                <h2>Популярность тарифов</h2>
                 ${tariffs.length === 0 ? '<p style="text-align: center; padding: 2rem;">Нет данных о тарифах</p>' : `
                 <div class="table-container">
-                    2?<thead>
-                        <tr>
-                            <th>Тариф</th>
-                            <th>Количество сеансов</th>
-                            <th>Выручка</th>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Тариф</th>
+                                <th>Количество сеансов</th>
+                                <th>Выручка</th>
+                            </tr>
                         </thead>
                         <tbody>
                             ${tariffs.map(tariff => `
@@ -118,7 +120,7 @@ async function renderReports(container) {
                                 </tr>
                             `).join('')}
                         </tbody>
-                    2?table>
+                    </table>
                 </div>
                 `}
             </div>
@@ -190,13 +192,13 @@ async function renderTariffs(container) {
                                 data-package-hours="${tariff.package_hours || 0}" 
                                 data-package-price="${tariff.package_price || 0}" 
                                 style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                            ✏️ Редактировать
+                            Редактировать
                         </button>
                         <button class="delete-tariff-btn btn btn-danger" 
                                 data-id="${tariff.id}" 
                                 data-name="${escapeHtml(tariff.name)}" 
                                 style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                            🗑️ Удалить
+                            Удалить
                         </button>
                     </div>
                 </div>
@@ -264,7 +266,7 @@ async function renderTariffs(container) {
                         </div>
                     </div>
                     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                        <button type="button" id="saveTariffBtn" class="btn btn-primary" style="flex: 1;">💾 Сохранить изменения</button>
+                        <button type="button" id="saveTariffBtn" class="btn btn-primary" style="flex: 1;">Сохранить изменения</button>
                         <button type="button" id="cancelTariffBtn" class="btn btn-secondary" style="flex: 1;">Отмена</button>
                     </div>
                 </div>
@@ -329,7 +331,7 @@ async function renderTariffs(container) {
                     console.error('Ошибка редактирования:', error);
                     showNotification('❌ ' + error.message, 'error');
                     saveBtn.disabled = false;
-                    saveBtn.textContent = '💾 Сохранить cambios';
+                    saveBtn.textContent = 'Сохранить cambios';
                 }
             };
             
@@ -375,7 +377,7 @@ async function renderTariffs(container) {
                         console.error('Ошибка удаления:', error);
                         showNotification('❌ ' + error.message, 'error');
                         deleteBtn.disabled = false;
-                        deleteBtn.textContent = '🗑️ Удалить';
+                        deleteBtn.textContent = 'Удалить';
                     }
                 }
             });
@@ -555,7 +557,7 @@ async function renderProducts(container) {
         if (sessions.length === 0) {
             html += `
                 <div class="card" style="text-align: center; padding: 3rem;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">🛒</div>
+                    <div style="font-size: 4rem; margin-bottom: 1rem;"></div>
                     <h3>Нет активных сеансов</h3>
                     <p>Сначала начните сеанс для клиента</p>
                 </div>
@@ -603,17 +605,17 @@ async function renderProducts(container) {
                         <span>${isInStock ? 'В наличии' : 'Нет в наличии'}</span>
                         <span style="margin-left: auto;">Остаток: ${product.stock} шт.</span>
                     </div>
-                    <button class="btn btn-primary sell-btn" style="width: 100%; margin-top: 0.5rem; padding: 0.6rem; border-radius: 12px; font-weight: 600;">💳 Продать</button>
+                    <button class="btn btn-primary sell-btn" style="width: 100%; margin-top: 0.5rem; padding: 0.6rem; border-radius: 12px; font-weight: 600;">Продать</button>
             `;
             
             if (isOwner) {
                 html += `
                     <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
                         <button class="edit-product-btn" data-id="${product.id}" style="flex: 1; padding: 0.5rem; border-radius: 10px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 0.25rem; font-weight: 500;">
-                            ✏️ Редактировать
+                            Редактировать
                         </button>
                         <button class="delete-product-btn btn-danger" data-id="${product.id}" data-name="${escapeHtml(product.name)}" style="flex: 1; padding: 0.5rem; border-radius: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 0.25rem; font-weight: 500;">
-                            🗑️ Удалить
+                            Удалить
                         </button>
                     </div>
                 `;
@@ -675,7 +677,7 @@ async function renderProducts(container) {
                             <input type="text" id="totalPrice" value="${formatPrice(price)}" disabled style="width: 100%; padding: 0.75rem; border-radius: 12px; background: var(--bg-input);">
                         </div>
                         <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                            <button type="button" id="confirmSellBtn" class="btn btn-primary" style="flex: 1; border-radius: 12px;">Подтвердить продажу</button>
+                            <button type="button" id="confirmSellBtn" class="btn btn-primary" style="flex: 1; border-radius: 12px;">Продать</button>
                             <button type="button" id="cancelSellBtn" class="btn btn-secondary" style="flex: 1; border-radius: 12px;">Отмена</button>
                         </div>
                     </div>
@@ -751,7 +753,7 @@ async function renderProducts(container) {
                                 <input type="number" id="editProductStock" value="${currentStock}" min="0" step="1" required style="width: 100%; padding: 0.75rem; border-radius: 12px; background: var(--bg-input); border: 1px solid var(--border);">
                             </div>
                             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                                <button type="button" id="saveProductBtn" class="btn btn-primary" style="flex: 1; border-radius: 12px;">💾 Сохранить изменения</button>
+                                <button type="button" id="saveProductBtn" class="btn btn-primary" style="flex: 1; border-radius: 12px;">Сохранить изменения</button>
                                 <button type="button" id="cancelProductBtn" class="btn btn-secondary" style="flex: 1; border-radius: 12px;">Отмена</button>
                             </div>
                         </div>
@@ -795,7 +797,7 @@ async function renderProducts(container) {
                         } catch (error) {
                             showNotification('❌ ' + error.message, 'error');
                             saveBtn.disabled = false;
-                            saveBtn.textContent = '💾 Сохранить изменения';
+                            saveBtn.textContent = 'Сохранить изменения';
                         }
                     };
                     

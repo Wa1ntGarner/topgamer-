@@ -123,13 +123,13 @@ class TicTacToe {
 function renderTicTacToe(container, betAmount, onComplete) {
     const game = new TicTacToe((result) => {
         if (result === 'win') {
-            showNotification(`🎉 ПОБЕДА! Вы выиграли ${betAmount} ₽!`, 'success');
+            showNotification(`ПОБЕДА! Вы выиграли ${betAmount} ₽!`, 'success');
             if (onComplete) onComplete(betAmount);
         } else if (result === 'lose') {
-            showNotification(`😢 ПОРАЖЕНИЕ! Вы проиграли ${betAmount} ₽`, 'error');
+            showNotification(`ПОРАЖЕНИЕ! Вы проиграли ${betAmount} ₽`, 'error');
             if (onComplete) onComplete(0);
         } else {
-            showNotification('🤝 НИЧЬЯ! Попробуйте еще раз', 'info');
+            showNotification('НИЧЬЯ! Попробуйте еще раз', 'info');
             if (onComplete) onComplete(0);
         }
     });
@@ -137,7 +137,7 @@ function renderTicTacToe(container, betAmount, onComplete) {
     const renderBoard = () => {
         const boardHtml = `
             <div style="text-align: center;">
-                <h3>🎮 Крестики-нолики</h3>
+                <h3>Крестики-нолики</h3>
                 <div class="game-info">
                     <p>Вы играете за <strong style="color: var(--blue-light);">❌ X</strong></p>
                     <p>Ставка: <strong style="color: var(--warning);">${betAmount} ₽</strong></p>
@@ -155,7 +155,7 @@ function renderTicTacToe(container, betAmount, onComplete) {
                         </div>
                     `).join('')}
                 </div>
-                <button id="resetGameBtn" class="btn" style="margin-top: 1rem;">🔄 Новая игра</button>
+                <button id="resetGameBtn" class="btn" style="margin-top: 1rem;">Новая игра</button>
             </div>
         `;
         

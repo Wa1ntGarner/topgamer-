@@ -9,7 +9,7 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
-// Страница активных сеансов - КРАСИВЫЙ ДИЗАЙН
+// Страница активных сеансов
 async function renderActiveSessions(container) {
     try {
         const sessions = await api.getActiveSessions();
@@ -17,7 +17,6 @@ async function renderActiveSessions(container) {
         if (sessions.length === 0) {
             container.innerHTML = `
                 <div class="card" style="text-align: center; padding: 3rem;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">💻</div>
                     <h3>Нет активных сеансов</h3>
                     <p>Активные сеансы будут отображаться здесь</p>
                 </div>
@@ -88,9 +87,9 @@ window.endSessionById = async (sessionId, computerId) => {
             <div class="form-group">
                 <label>Способ оплаты</label>
                 <select id="paymentMethod" required style="width: 100%; padding: 0.75rem; border-radius: 12px; background: var(--bg-input); border: 1px solid var(--border);">
-                    <option value="cash">💵 Наличные</option>
-                    <option value="card">💳 Карта</option>
-                    <option value="balance">💰 С баланса</option>
+                    <option value="cash">Наличные</option>
+                    <option value="card">Карта</option>
+                    <option value="balance">С баланса</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-primary" style="width: 100%;">Завершить и оплатить</button>
@@ -128,7 +127,6 @@ async function renderProducts(container) {
             container.innerHTML = `
                 <h1>Продажа товаров</h1>
                 <div class="card" style="text-align: center; padding: 3rem;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">🛒</div>
                     <h3>Нет активных сеансов</h3>
                     <p>Сначала начните сеанс для клиента</p>
                 </div>
@@ -169,7 +167,7 @@ async function renderProducts(container) {
                         <span>${stockText}</span>
                         <span style="margin-left: auto;">Остаток: ${product.stock} шт.</span>
                     </div>
-                    <button class="btn btn-primary sell-btn" style="width: 100%; margin-top: 0.5rem;">💳 Продать</button>
+                    <button class="btn btn-primary sell-btn" style="width: 100%; margin-top: 0.5rem;">Продать</button>
                 </div>
             `;
         });
@@ -205,15 +203,7 @@ async function renderProducts(container) {
                 }
                 
                 const quantityHtml = `
-                    <form id="quantityForm">
-                        <div class="form-group">
-                            <label>Товар</label>
-                            <input type="text" value="${productName}" disabled style="width: 100%; padding: 0.75rem; border-radius: 12px; background: var(--bg-input);">
-                        </div>
-                        <div class="form-group">
-                            <label>Цена за шт.</label>
-                            <input type="text" value="${formatPrice(price)}" disabled style="width: 100%; padding: 0.75rem; border-radius: 12px; background: var(--bg-input);">
-                        </div>
+                    <div>
                         <div class="form-group">
                             <label>Количество</label>
                             <input type="number" id="quantity" min="1" max="${stock}" value="1" required style="width: 100%; padding: 0.75rem; border-radius: 12px; background: var(--bg-input); border: 1px solid var(--border);">
@@ -223,14 +213,18 @@ async function renderProducts(container) {
                             <label>Итого</label>
                             <input type="text" id="totalPrice" value="${formatPrice(price)}" disabled style="width: 100%; padding: 0.75rem; border-radius: 12px; background: var(--bg-input);">
                         </div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Подтвердить продажу</button>
-                    </form>
+                        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                            <button type="button" id="confirmSellBtn" class="btn btn-primary" style="flex: 1;">Продать</button>
+                            <button type="button" id="cancelSellBtn" class="btn btn-secondary" style="flex: 1;">Отмена</button>
+                        </div>
+                    </div>
                 `;
                 
                 const modal = showModal('Продажа товара', quantityHtml);
-                const form = modal.querySelector('#quantityForm');
-                const quantityInput = form.querySelector('#quantity');
-                const totalPriceInput = form.querySelector('#totalPrice');
+                const quantityInput = modal.querySelector('#quantity');
+                const totalPriceInput = modal.querySelector('#totalPrice');
+                const confirmBtn = modal.querySelector('#confirmSellBtn');
+                const cancelBtn = modal.querySelector('#cancelSellBtn');
                 
                 quantityInput.addEventListener('input', () => {
                     const qty = parseInt(quantityInput.value) || 0;
@@ -238,8 +232,7 @@ async function renderProducts(container) {
                     totalPriceInput.value = formatPrice(total);
                 });
                 
-                form.onsubmit = async (e) => {
-                    e.preventDefault();
+                confirmBtn.onclick = async () => {
                     const quantity = parseInt(quantityInput.value);
                     
                     if (quantity < 1 || quantity > stock) {
@@ -247,10 +240,8 @@ async function renderProducts(container) {
                         return;
                     }
                     
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    const originalText = submitBtn.textContent;
-                    submitBtn.textContent = 'Продажа...';
-                    submitBtn.disabled = true;
+                    confirmBtn.disabled = true;
+                    confirmBtn.textContent = 'Продажа...';
                     
                     try {
                         await api.sellProduct({
@@ -264,20 +255,22 @@ async function renderProducts(container) {
                     } catch (error) {
                         console.error('Ошибка продажи:', error);
                         showNotification('❌ ' + error.message, 'error');
-                        submitBtn.textContent = originalText;
-                        submitBtn.disabled = false;
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = 'Продать';
                     }
                 };
+                
+                cancelBtn.onclick = () => modal.remove();
             };
         });
         
     } catch (error) {
         console.error('Render products error:', error);
-        container.innerHTML = `<div class="card error">Ошибка загрузки: ${error.message}</div>`;
+        container.innerHTML = `<div class="card error">Ошибка: ${error.message}</div>`;
     }
 }
 
-// Страница клиентов - КРАСИВЫЙ ДИЗАЙН
+// Страница клиентов с поиском по телефону
 async function renderClients(container) {
     try {
         console.log('Загрузка списка клиентов...');
@@ -286,9 +279,8 @@ async function renderClients(container) {
             <h1>Клиенты</h1>
             <div class="card">
                 <div class="form-group">
-                    <label>🔍 Поиск по номеру телефона (последние 4 цифры) или имени</label>
+                    <label>Поиск по номеру телефона</label>
                     <input type="text" id="searchInput" placeholder="Введите номер телефона или имя..." style="width: 100%; padding: 0.75rem 1rem; border-radius: 12px; background: var(--bg-input); border: 1px solid var(--border); font-size: 1rem;">
-                    <small style="color: var(--text-muted);">Введите последние 4 цифры номера телефона или часть имени</small>
                 </div>
             </div>
             <div id="clientsTableContainer">
@@ -328,7 +320,7 @@ async function renderClients(container) {
                 clients.forEach(client => {
                     const balanceFormatted = Math.floor(parseFloat(client.balance));
                     const phone = client.phone || '-';
-                    const displayPhone = phone !== '-' ? phone.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '+$1 ($2) $3-$4-$5') : '-';
+                    const displayPhone = phone !== '-' ? phone.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '$1 ($2) $3-$4-$5') : '-';
                     const registerDate = new Date(client.created_at).toLocaleDateString('ru-RU');
                     
                     tableHtml += `
@@ -358,7 +350,7 @@ async function renderClients(container) {
                                 </div>
                             </div>
                             <button onclick="showTopUpModal('${client.id}', '${escapeHtml(client.full_name)}')" class="btn btn-primary" style="width: 100%;">
-                                💰 Пополнить баланс
+                                Пополнить баланс
                             </button>
                         </div>
                     `;
@@ -397,7 +389,7 @@ async function renderClients(container) {
 window.showTopUpModal = (userId, userName) => {
     const modalHtml = `
         <div style="padding: 1rem;">
-            <h3 style="margin-bottom: 1rem; color: var(--accent-light);">💰 Пополнение баланса</h3>
+            <h3 style="margin-bottom: 1rem; color: var(--accent-light);">Пополнение баланса</h3>
             <p>Клиент: <strong>${userName}</strong></p>
             <div style="margin: 1rem 0;">
                 <label style="display: block; margin-bottom: 0.5rem;">Сумма (₽):</label>
@@ -406,7 +398,7 @@ window.showTopUpModal = (userId, userName) => {
                 <small style="color: var(--text-muted);">Минимальная сумма: 1 ₽, максимальная: 10 000 ₽</small>
             </div>
             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                <button id="topup-confirm" class="btn btn-primary" style="flex: 1;">💳 Пополнить</button>
+                <button id="topup-confirm" class="btn btn-primary" style="flex: 1;">Пополнить</button>
                 <button id="topup-cancel" class="btn btn-secondary" style="flex: 1;">Отмена</button>
             </div>
         </div>
@@ -457,7 +449,7 @@ window.showTopUpModal = (userId, userName) => {
     cancelBtn.onclick = () => modal.remove();
 };
 
-// Страница всех активных бронирований - КРАСИВЫЙ ДИЗАЙН
+// Страница всех активных бронирований - с возможностью начать сеанс
 async function renderAllBookings(container) {
     try {
         const bookings = await api.getAllActiveBookings();
@@ -465,7 +457,6 @@ async function renderAllBookings(container) {
         if (bookings.length === 0) {
             container.innerHTML = `
                 <div class="card" style="text-align: center; padding: 3rem;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">📅</div>
                     <h3>Нет активных бронирований</h3>
                     <p>Активные бронирования будут отображаться здесь</p>
                 </div>
@@ -489,13 +480,18 @@ async function renderAllBookings(container) {
             
             if (booking.status === 'active') {
                 if (startTime > now) {
-                    statusBadge = 'Активно';
-                    statusColor = 'var(--success)';
-                    actions = `<button onclick="cancelBookingByAdmin('${booking.id}', ${booking.computer_id})" class="btn btn-danger" style="width: 100%; margin-top: 0.5rem;">❌ Отменить бронирование</button>`;
-                } else if (startTime <= now && endTime > now) {
-                    statusBadge = 'В процессе';
+                    statusBadge = 'Ожидает';
                     statusColor = 'var(--warning)';
-                    actions = `<button onclick="startSessionFromBooking(${booking.computer_id}, '${booking.user_id}')" class="btn btn-success" style="width: 100%; margin-top: 0.5rem;">▶ Начать сеанс</button>`;
+                    actions = `
+                        <button onclick="cancelBookingByAdmin('${booking.id}', ${booking.computer_id})" class="btn btn-danger" style="width: 100%; margin-top: 0.5rem;">❌ Отменить бронирование</button>
+                    `;
+                } else if (startTime <= now && endTime > now) {
+                    statusBadge = 'Можно начать';
+                    statusColor = 'var(--success)';
+                    actions = `
+                        <button onclick="startSessionFromBooking(${booking.computer_id}, '${booking.user_id}')" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">▶ Начать сеанс</button>
+                        <button onclick="cancelBookingByAdmin('${booking.id}', ${booking.computer_id})" class="btn btn-danger" style="width: 100%; margin-top: 0.5rem;">❌ Отменить</button>
+                    `;
                 } else {
                     statusBadge = 'Истекло';
                     statusColor = 'var(--text-muted)';
@@ -509,7 +505,16 @@ async function renderAllBookings(container) {
             }
             
             const phone = booking.user_phone || '-';
-            const displayPhone = phone !== '-' ? phone.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '+$1 ($2) $3-$4-$5') : '-';
+            const displayPhone = phone !== '-' ? phone.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '$1 ($2) $3-$4-$5') : '-';
+            
+            const formatDateTimeShort = (date) => {
+                return date.toLocaleString('ru-RU', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            };
             
             html += `
                 <div class="card booking-card" style="position: relative; overflow: hidden;">
@@ -530,14 +535,15 @@ async function renderAllBookings(container) {
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                             <span style="font-size: 1.2rem;">📅</span>
-                            <span>${formatDateTime(booking.start_time)} - ${formatDateTime(booking.end_time)}</span>
+                            <span>${formatDateTimeShort(startTime)} - ${formatDateTimeShort(endTime)}</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-size: 1.2rem;">⏱️</span>
                             <span>Длительность: ${Math.round((endTime - startTime) / (1000 * 60))} минут</span>
                         </div>
                     </div>
-                    ${actions}
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        ${actions}
+                    </div>
                 </div>
             `;
         }
@@ -578,6 +584,6 @@ window.startSessionFromBooking = async (computerId, userId) => {
         showNotification('✅ Сеанс успешно начат!', 'success');
         router.handleRoute();
     } catch (error) {
-        showNotification('❌ ' + error.message, 'error');
+        showNotification('❌ Ошибка: ' + error.message, 'error');
     }
 };

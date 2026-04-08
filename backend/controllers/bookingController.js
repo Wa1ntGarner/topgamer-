@@ -8,10 +8,13 @@ const createBooking = async (req, res) => {
             user_id = req.user.id;
         }
         
+        // Парсим даты как локальные (без преобразования в UTC)
         const startDate = new Date(start_time);
         const endDate = new Date(end_time);
+        const now = new Date();
         
-        if (startDate < new Date()) {
+        // Проверка: нельзя бронировать в прошлом (сравниваем локальные даты)
+        if (startDate < now) {
             return res.status(400).json({ error: 'Нельзя забронировать время в прошлом' });
         }
         
@@ -24,6 +27,7 @@ const createBooking = async (req, res) => {
             return res.status(400).json({ error: 'Максимальное время бронирования - 24 часа' });
         }
         
+        // Проверяем компьютер
         const computer = await query(
             'SELECT * FROM computers WHERE id = $1',
             [computer_id]
@@ -39,13 +43,17 @@ const createBooking = async (req, res) => {
             return res.status(400).json({ error: 'Компьютер неисправен, бронирование невозможно' });
         }
         
+        // Сохраняем время как есть (локальное время клиента)
+        const startTimeISO = new Date(startDate.getTime() - (startDate.getTimezoneOffset() * 60000)).toISOString();
+        const endTimeISO = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000)).toISOString();
+        
         // Проверка пересечений с другими бронированиями
         const conflictingBookings = await query(
             `SELECT * FROM bookings 
              WHERE computer_id = $1 
              AND status = 'active'
              AND (start_time, end_time) OVERLAPS ($2::timestamp, $3::timestamp)`,
-            [computer_id, start_time, end_time]
+            [computer_id, startTimeISO, endTimeISO]
         );
         
         if (conflictingBookings.rows.length > 0) {
@@ -60,7 +68,7 @@ const createBooking = async (req, res) => {
              WHERE computer_id = $1 
              AND end_time IS NULL
              AND (start_time, end_time) OVERLAPS ($2::timestamp, $3::timestamp)`,
-            [computer_id, start_time, end_time]
+            [computer_id, startTimeISO, endTimeISO]
         );
         
         if (activeSessions.rows.length > 0) {
@@ -78,21 +86,21 @@ const createBooking = async (req, res) => {
             return res.status(404).json({ error: 'Пользователь не найден' });
         }
         
-        // Создаем бронирование с tariff_id (если передан)
+        // Сохраняем бронирование
         let result;
         if (tariff_id) {
             result = await query(
                 `INSERT INTO bookings (user_id, computer_id, start_time, end_time, status, tariff_id) 
                  VALUES ($1, $2, $3::timestamp, $4::timestamp, 'active', $5) 
                  RETURNING *`,
-                [user_id, computer_id, start_time, end_time, tariff_id]
+                [user_id, computer_id, startTimeISO, endTimeISO, tariff_id]
             );
         } else {
             result = await query(
                 `INSERT INTO bookings (user_id, computer_id, start_time, end_time, status) 
                  VALUES ($1, $2, $3::timestamp, $4::timestamp, 'active') 
                  RETURNING *`,
-                [user_id, computer_id, start_time, end_time]
+                [user_id, computer_id, startTimeISO, endTimeISO]
             );
         }
         
@@ -104,7 +112,7 @@ const createBooking = async (req, res) => {
         await query(
             `INSERT INTO transactions (user_id, type, amount, description) 
              VALUES ($1, $2, $3, $4)`,
-            [user_id, 'withdrawal', 0, `Бронирование компьютера ${computerData.name} с ${new Date(start_time).toLocaleString()} до ${new Date(end_time).toLocaleString()}`]
+            [user_id, 'withdrawal', 0, `Бронирование компьютера ${computerData.name} с ${startDate.toLocaleString()} до ${endDate.toLocaleString()}`]
         );
         
         res.status(201).json({ 
@@ -130,7 +138,26 @@ const getUserBookings = async (req, res) => {
             [req.user.id]
         );
         
-        res.json(result.rows);
+        // Преобразуем время из UTC в локальное для каждого бронирования
+        const bookings = result.rows.map(booking => {
+            const startTime = new Date(booking.start_time);
+            const endTime = new Date(booking.end_time);
+            
+            // Добавляем смещение часового пояса для отображения
+            const offset = startTime.getTimezoneOffset();
+            const localStartTime = new Date(startTime.getTime() - offset * 60000);
+            const localEndTime = new Date(endTime.getTime() - offset * 60000);
+            
+            return {
+                ...booking,
+                start_time_local: localStartTime.toISOString(),
+                end_time_local: localEndTime.toISOString(),
+                start_time_display: localStartTime.toLocaleString(),
+                end_time_display: localEndTime.toLocaleString()
+            };
+        });
+        
+        res.json(bookings);
     } catch (error) {
         console.error('Get user bookings error:', error);
         res.status(500).json({ error: 'Ошибка получения бронирований' });
@@ -140,7 +167,7 @@ const getUserBookings = async (req, res) => {
 const getAllActiveBookings = async (req, res) => {
     try {
         const result = await query(
-            `SELECT b.*, c.name as computer_name, u.full_name as user_name
+            `SELECT b.*, c.name as computer_name, u.full_name as user_name, u.phone as user_phone
              FROM bookings b
              JOIN computers c ON b.computer_id = c.id
              JOIN users u ON b.user_id = u.id
@@ -148,7 +175,23 @@ const getAllActiveBookings = async (req, res) => {
              ORDER BY b.start_time ASC`,
             []
         );
-        res.json(result.rows);
+        
+        // Преобразуем время из UTC в локальное
+        const bookings = result.rows.map(booking => {
+            const startTime = new Date(booking.start_time);
+            const endTime = new Date(booking.end_time);
+            const offset = startTime.getTimezoneOffset();
+            const localStartTime = new Date(startTime.getTime() - offset * 60000);
+            const localEndTime = new Date(endTime.getTime() - offset * 60000);
+            
+            return {
+                ...booking,
+                start_time_local: localStartTime.toISOString(),
+                end_time_local: localEndTime.toISOString()
+            };
+        });
+        
+        res.json(bookings);
     } catch (error) {
         console.error('Get all active bookings error:', error);
         res.status(500).json({ error: 'Ошибка получения активных бронирований' });
@@ -173,12 +216,16 @@ const cancelBooking = async (req, res) => {
         
         const bookingData = booking.rows[0];
         
-        if (bookingData.user_id !== req.user.id && req.user.role === 'client') {
-            return res.status(403).json({ error: 'Недостаточно прав' });
+        // Проверяем, не началось ли уже бронирование (сравниваем с текущим временем)
+        const bookingStartTime = new Date(bookingData.start_time);
+        const now = new Date();
+        
+        if (bookingStartTime <= now) {
+            return res.status(400).json({ error: 'Нельзя отменить бронирование, которое уже началось' });
         }
         
-        if (new Date(bookingData.start_time) <= new Date()) {
-            return res.status(400).json({ error: 'Нельзя отменить бронирование, которое уже началось' });
+        if (bookingData.user_id !== req.user.id && req.user.role === 'client') {
+            return res.status(403).json({ error: 'Недостаточно прав' });
         }
         
         const result = await query(

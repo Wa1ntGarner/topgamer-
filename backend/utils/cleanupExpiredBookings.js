@@ -3,12 +3,13 @@ const { query } = require('../config/db');
 const cleanupExpiredBookings = async () => {
     try {
         const now = new Date();
+        const nowUTC = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString();
         
         const expiredBookings = await query(
             `SELECT * FROM bookings 
              WHERE status = 'active' 
-             AND end_time < $1`,
-            [now]
+             AND end_time < $1::timestamp`,
+            [nowUTC]
         );
         
         for (const booking of expiredBookings.rows) {

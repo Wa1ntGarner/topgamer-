@@ -300,8 +300,6 @@ function showAdminBookingModal(computerId, computerName) {
     
     const defaultStartDate = formatDateForInput(minDateTime);
     const defaultStartTime = formatTimeForInput(minDateTime);
-    const defaultEndDate = formatDateForInput(new Date(minDateTime.getTime() + 2 * 3600000));
-    const defaultEndTime = formatTimeForInput(new Date(minDateTime.getTime() + 2 * 3600000));
     
     const html = `
         <div>
@@ -877,10 +875,8 @@ async function renderClientProducts(container) {
         if (!activeSession) {
             html += `
                 <div class="card" style="text-align: center; padding: 3rem;">
-                    <div style="font-size: 4rem;">🛒</div>
                     <h3>Нет активного сеанса</h3>
                     <p>Чтобы покупать товары, сначала начните сеанс у администратора.</p>
-                    <a href="#/dashboard" class="btn btn-primary">Вернуться к схеме залов</a>
                 </div>
             `;
             container.innerHTML = html;
@@ -1021,34 +1017,21 @@ async function renderProfile(container) {
                 const statusColor = booking.status === 'active' ? 'var(--success)' : 
                                    booking.status === 'cancelled' ? 'var(--danger)' : 'var(--text-muted)';
                 
-                // Парсим даты из ISO строк (уже в UTC, JS интерпретирует как локальные)
+                // Правильное форматирование даты и времени в локальный формат
                 const startDate = new Date(booking.start_time);
                 const endDate = new Date(booking.end_time);
                 
-                // Форматирование с учетом локального часового пояса
-                const formatLocalDateTime = (date) => {
+                const formatDateTime = (date) => {
                     const year = date.getFullYear();
-                    const month = date.getMonth() + 1;
-                    const day = date.getDate();
-                    const hours = date.getHours();
-                    const minutes = date.getMinutes();
-                    
-                    const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 
-                                        'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-                    
-                    return {
-                        date: `${day} ${monthNames[month - 1]}`,
-                        time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
-                        full: `${day} ${monthNames[month - 1]} в ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-                    };
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    return `${day}.${month}.${year} ${hours}:${minutes}`;
                 };
                 
-                const startFormatted = formatLocalDateTime(startDate);
-                const endFormatted = formatLocalDateTime(endDate);
-                
-                // Определяем, нужно ли показывать дату окончания
-                const isSameDay = startDate.toDateString() === endDate.toDateString();
-                const endDisplay = isSameDay ? endFormatted.time : `${endFormatted.date} в ${endFormatted.time}`;
+                const startFormatted = formatDateTime(startDate);
+                const endFormatted = formatDateTime(endDate);
                 
                 bookingsHtml += `
                     <div style="background: var(--bg-input); border-radius: 16px; padding: 1rem; border-left: 4px solid ${statusColor};">
@@ -1064,11 +1047,11 @@ async function renderProfile(container) {
                         <div style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <span>📅</span>
-                                <span><strong>Начало:</strong> ${startFormatted.full}</span>
+                                <span><strong>Начало:</strong> ${startFormatted}</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <span>⏰</span>
-                                <span><strong>Окончание:</strong> ${endDisplay}</span>
+                                <span><strong>Окончание:</strong> ${endFormatted}</span>
                             </div>
                         </div>
                         ${booking.status === 'active' ? `
@@ -1101,8 +1084,8 @@ async function renderProfile(container) {
                         <div class="info-row"><span class="info-label">Баланс:</span><span class="balance">${roundedBalance} ₽</span></div>
                     </div>
                     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                        <button id="depositBtn" class="btn btn-primary">🎮 Пополнить баланс (игра)</button>
-                        <button id="changePasswordBtn" class="btn btn-secondary">🔒 Сменить пароль</button>
+                        <button id="depositBtn" class="btn btn-primary">Пополнить баланс</button>
+                        <button id="changePasswordBtn" class="btn btn-secondary">Сменить пароль</button>
                     </div>
                 </div>
                 <div class="card">${bookingsHtml}</div>
@@ -1228,14 +1211,14 @@ async function renderProfile(container) {
                     if (prize > 0) {
                         try {
                             await api.updateUserBalance(user.id, prize);
-                            showNotification(`🎉 Поздравляем! Вы выиграли ${prize} ₽!`, 'success');
+                            showNotification(`Вы выиграли ${prize} ₽!`, 'success');
                             gameModal.remove();
                             router.handleRoute();
                         } catch (error) {
                             showNotification('Ошибка: ' + error.message, 'error');
                         }
                     } else {
-                        showNotification('😢 Вы проиграли! Попробуйте еще раз', 'error');
+                        showNotification('Вы проиграли! Попробуйте еще раз', 'error');
                         setTimeout(() => gameModal.remove(), 1500);
                     }
                 });
